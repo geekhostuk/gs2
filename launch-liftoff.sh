@@ -3,28 +3,18 @@
 #   docker exec -it bot1 /usr/local/bin/launch-liftoff.sh
 #   docker exec -it bot2 /usr/local/bin/launch-liftoff.sh
 
-set -e
-
 GAME_DIR="/home/botuser/.local/share/Steam/steamapps/common/Liftoff"
 
-# Build launch options
-LAUNCH_OPTS="-windowed -w 800 -h 600"
-
-# Enable BepInEx doorstop if installed
-DOORSTOP_ENV=""
+# Check if BepInEx is installed but launch options may not be set
 if [ -f "$GAME_DIR/libdoorstop.so" ]; then
-    echo "BepInEx detected — enabling doorstop preloader."
-    DOORSTOP_ENV="DOORSTOP_ENABLE=TRUE DOORSTOP_LIB=$GAME_DIR/libdoorstop.so DOORSTOP_LIBS=$GAME_DIR/doorstop_libs DOORSTOP_INVOKE_DLL_PATH=$GAME_DIR/BepInEx/core/BepInEx.Preloader.dll LD_LIBRARY_PATH=$GAME_DIR:\$LD_LIBRARY_PATH LD_PRELOAD=libdoorstop.so:\$LD_PRELOAD"
-else
-    echo "BepInEx not detected — launching vanilla."
+    echo "BepInEx is installed."
+    echo "Make sure Steam Launch Options are set (see setup-bepinex.sh output)."
+    echo ""
 fi
 
 echo "Launching Liftoff (App ID 732990)..."
 
-if command -v vglrun &>/dev/null; then
-    RUNNER="vglrun"
-else
-    RUNNER=""
-fi
+# Use steam's protocol handler via the running Steam instance
+su -s /bin/bash botuser -c 'export DISPLAY=:1 HOME=/home/botuser; steam steam://rungameid/732990' &
 
-su -s /bin/bash botuser -c "export DISPLAY=:1 VGL_DISPLAY=egl HOME=/home/botuser $DOORSTOP_ENV; $RUNNER steam -applaunch 732990 $LAUNCH_OPTS"
+echo "Launch command sent to Steam. Check VNC to verify."
