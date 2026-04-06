@@ -47,6 +47,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-liberation \
     sudo \
     policykit-1 \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # Install VirtualGL — force-extract to avoid apt removing it over deps
@@ -81,6 +82,7 @@ RUN mkdir -p /etc/polkit-1/localauthority/50-local.d \
 # Copy scripts
 COPY start.sh /usr/local/bin/start.sh
 COPY launch-liftoff.sh /usr/local/bin/launch-liftoff.sh
-RUN chmod +x /usr/local/bin/start.sh /usr/local/bin/launch-liftoff.sh
+COPY setup-bepinex.sh /usr/local/bin/setup-bepinex.sh
+RUN chmod +x /usr/local/bin/start.sh /usr/local/bin/launch-liftoff.sh /usr/local/bin/setup-bepinex.sh
 
 ENTRYPOINT ["/usr/local/bin/start.sh"]
