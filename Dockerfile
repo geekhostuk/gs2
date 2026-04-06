@@ -4,7 +4,8 @@ ENV NVIDIA_VISIBLE_DEVICES=all \
     NVIDIA_DRIVER_CAPABILITIES=all \
     VGL_DISPLAY=egl \
     DISPLAY=:1 \
-    DEBIAN_FRONTEND=noninteractive
+    DEBIAN_FRONTEND=noninteractive \
+    STEAM_RUNTIME=1
 
 # Enable 32-bit architecture (required by Steam)
 RUN dpkg --add-architecture i386
@@ -31,6 +32,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libvulkan1 \
     mesa-vulkan-drivers \
     vulkan-tools \
+    libxv1 \
+    libglu1-mesa \
     # 32-bit GL/Vulkan (Steam/games need these)
     libgl1:i386 \
     libgl1-mesa-dri:i386 \
@@ -40,29 +43,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpulse0 \
     libasound2 \
     libasound2:i386 \
-    # Fonts
+    # Fonts and misc
     fonts-liberation \
-    # VirtualGL dependencies
-    libxv1 \
-    libglu1-mesa \
-    # sudo (needed for Steam's steamdeps)
     sudo \
+    policykit-1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install VirtualGL (apt-get update needed so -f can resolve deps)
-RUN apt-get update \
-    && wget -O /tmp/virtualgl.deb \
+# Install VirtualGL — force-extract to avoid apt removing it over deps
+RUN wget -O /tmp/virtualgl.deb \
        https://github.com/VirtualGL/virtualgl/releases/download/3.1.4/virtualgl_3.1.4_amd64.deb \
-    && (dpkg -i /tmp/virtualgl.deb || true) \
-    && apt-get install -f -y \
+    && dpkg -x /tmp/virtualgl.deb / \
     && rm -f /tmp/virtualgl.deb \
-    && rm -rf /var/lib/apt/lists/* \
     && ln -s /opt/VirtualGL/bin/vglrun /usr/local/bin/vglrun \
     && echo "/opt/VirtualGL/lib64" > /etc/ld.so.conf.d/virtualgl.conf \
     && echo "/opt/VirtualGL/lib32" >> /etc/ld.so.conf.d/virtualgl.conf \
-    && ldconfig
+    && ldconfig \
+    && ls -la /opt/VirtualGL/lib64/libvglfaker.so \
+    && ls -la /opt/VirtualGL/lib64/libdlfaker.so
 
-# Install Steam
+# Install Steam and pre-run steamdeps so it doesn't prompt at runtime
 RUN apt-get update \
     && wget -O /tmp/steam.deb \
        http://media.steampowered.com/client/installer/steam.deb \
@@ -76,6 +75,11 @@ RUN useradd -m -s /bin/bash -G video,audio,sudo botuser \
     && echo "botuser ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/botuser \
     && mkdir -p /home/botuser/.steam /home/botuser/.local/share/Steam \
     && chown -R botuser:botuser /home/botuser
+
+# Allow passwordless polkit for botuser
+RUN mkdir -p /etc/polkit-1/localauthority/50-local.d \
+    && echo '[Allow botuser all]\nIdentity=unix-user:botuser\nAction=*\nResultAny=yes\nResultInactive=yes\nResultActive=yes' \
+       > /etc/polkit-1/localauthority/50-local.d/botuser-allow.pkla
 
 # Copy scripts
 COPY start.sh /usr/local/bin/start.sh
