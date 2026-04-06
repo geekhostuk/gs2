@@ -50,16 +50,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install VirtualGL — force-extract to avoid apt removing it over deps
+# Libs install to /usr/lib/, binaries to /usr/bin/ and /opt/VirtualGL/bin/
 RUN wget -O /tmp/virtualgl.deb \
        https://github.com/VirtualGL/virtualgl/releases/download/3.1.4/virtualgl_3.1.4_amd64.deb \
     && dpkg -x /tmp/virtualgl.deb / \
     && rm -f /tmp/virtualgl.deb \
-    && ln -s /opt/VirtualGL/bin/vglrun /usr/local/bin/vglrun \
-    && echo "/opt/VirtualGL/lib64" > /etc/ld.so.conf.d/virtualgl.conf \
-    && echo "/opt/VirtualGL/lib32" >> /etc/ld.so.conf.d/virtualgl.conf \
     && ldconfig \
-    && ls -la /opt/VirtualGL/lib64/libvglfaker.so \
-    && ls -la /opt/VirtualGL/lib64/libdlfaker.so
+    && ls -la /usr/lib/libvglfaker.so /usr/lib/libdlfaker.so /usr/bin/vglrun
 
 # Install Steam and pre-run steamdeps so it doesn't prompt at runtime
 RUN apt-get update \
