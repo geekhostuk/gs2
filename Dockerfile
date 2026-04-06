@@ -80,18 +80,27 @@ RUN mkdir -p /etc/polkit-1/localauthority/50-local.d \
     && printf '[Allow botuser all]\nIdentity=unix-user:botuser\nAction=*\nResultAny=yes\nResultInactive=yes\nResultActive=yes\n' \
        > /etc/polkit-1/localauthority/50-local.d/botuser-allow.pkla
 
-# Headless Xorg config — uses NVIDIA GPU without a physical display
+# Headless Xorg config — uses NVIDIA GPU with a fake connected display
 RUN mkdir -p /etc/X11 \
     && printf 'Section "Device"\n\
     Identifier "Device0"\n\
     Driver     "nvidia"\n\
     Option     "AllowEmptyInitialConfiguration" "true"\n\
+    Option     "ConnectedMonitor" "DFP-0"\n\
+    Option     "CustomEDID" "DFP-0:/etc/X11/edid.bin"\n\
+EndSection\n\
+\n\
+Section "Monitor"\n\
+    Identifier "Monitor0"\n\
+    Option     "DPMS" "false"\n\
 EndSection\n\
 \n\
 Section "Screen"\n\
     Identifier "Screen0"\n\
     Device     "Device0"\n\
+    Monitor    "Monitor0"\n\
     DefaultDepth 24\n\
+    Option     "MetaModes" "1280x720 +0+0"\n\
     SubSection "Display"\n\
         Depth 24\n\
         Modes "1280x720"\n\
@@ -113,6 +122,9 @@ Section "ServerFlags"\n\
     Option "SuspendTime" "0"\n\
     Option "OffTime" "0"\n\
 EndSection\n' > /etc/X11/xorg.conf
+
+# Copy EDID for fake display
+COPY edid.bin /etc/X11/edid.bin
 
 # Copy scripts
 COPY start.sh /usr/local/bin/start.sh
