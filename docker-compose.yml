@@ -1,0 +1,56 @@
+services:
+  bot1:
+    build: .
+    image: liftoff-bot:latest
+    container_name: bot1
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - VGL_DISPLAY=egl
+      - DISPLAY=:1
+    ports:
+      - "31264:5900"
+    volumes:
+      - bot1-steam:/home/botuser/.steam
+      - bot1-steamlocal:/home/botuser/.local/share/Steam
+    shm_size: "512mb"
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  bot2:
+    build: .
+    image: liftoff-bot:latest
+    container_name: bot2
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - VGL_DISPLAY=egl
+      - DISPLAY=:1
+    ports:
+      - "31265:5900"
+    volumes:
+      - bot2-steam:/home/botuser/.steam
+      - bot2-steamlocal:/home/botuser/.local/share/Steam
+    shm_size: "512mb"
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  bot1-steam:
+  bot1-steamlocal:
+  bot2-steam:
+  bot2-steamlocal:
