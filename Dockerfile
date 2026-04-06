@@ -46,9 +46,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install VirtualGL
 RUN wget -O /tmp/virtualgl.deb \
-    https://github.com/VirtualGL/virtualgl/releases/download/3.1.2/virtualgl_3.1.2_amd64.deb \
+    https://github.com/VirtualGL/virtualgl/releases/download/3.1.4/virtualgl_3.1.4_amd64.deb \
     && (dpkg -i /tmp/virtualgl.deb || apt-get install -f -y) \
     && rm /tmp/virtualgl.deb \
+    && ls -la /opt/VirtualGL/bin/vglrun \
+    && ln -s /opt/VirtualGL/bin/vglrun /usr/local/bin/vglrun \
     && vglrun --version
 
 # Install Steam
