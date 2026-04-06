@@ -45,15 +45,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install VirtualGL
-RUN wget -q -O /tmp/virtualgl.deb \
-    https://github.com/VirtualGL/virtualgl/releases/download/3.1.4/virtualgl_3.1.4_amd64.deb \
-    && dpkg -i /tmp/virtualgl.deb || apt-get install -f -y \
-    && rm /tmp/virtualgl.deb
+RUN wget -O /tmp/virtualgl.deb \
+    https://github.com/VirtualGL/virtualgl/releases/download/3.1.2/virtualgl_3.1.2_amd64.deb \
+    && (dpkg -i /tmp/virtualgl.deb || apt-get install -f -y) \
+    && rm /tmp/virtualgl.deb \
+    && vglrun --version
 
 # Install Steam
-RUN wget -q -O /tmp/steam.deb \
+RUN wget -O /tmp/steam.deb \
     http://media.steampowered.com/client/installer/steam.deb \
-    && dpkg -i /tmp/steam.deb || apt-get install -f -y \
+    && (dpkg -i /tmp/steam.deb || apt-get install -f -y) \
     && rm /tmp/steam.deb
 
 # Create non-root user with GPU and audio access

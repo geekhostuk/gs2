@@ -5,5 +5,11 @@
 
 set -e
 
+if command -v vglrun &>/dev/null; then
+    LAUNCH_CMD="vglrun steam -applaunch 732990 -windowed -w 800 -h 600"
+else
+    LAUNCH_CMD="steam -applaunch 732990 -windowed -w 800 -h 600"
+fi
+
 echo "Launching Liftoff (App ID 732990)..."
-su -p -s /bin/bash botuser -c "vglrun steam -applaunch 732990 -windowed -w 800 -h 600"
+su -s /bin/bash botuser -c "export DISPLAY=:1 VGL_DISPLAY=egl HOME=/home/botuser; $LAUNCH_CMD"
