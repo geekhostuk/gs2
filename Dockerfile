@@ -42,6 +42,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libasound2:i386 \
     # Fonts
     fonts-liberation \
+    # VirtualGL dependencies
+    libxv1 \
+    libglu1-mesa \
+    # sudo (needed for Steam's steamdeps)
+    sudo \
     && rm -rf /var/lib/apt/lists/*
 
 # Install VirtualGL (apt-get update needed so -f can resolve deps)
@@ -66,8 +71,9 @@ RUN apt-get update \
     && rm -f /tmp/steam.deb \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user with GPU and audio access
-RUN useradd -m -s /bin/bash -G video,audio botuser \
+# Create non-root user with GPU and audio access + passwordless sudo
+RUN useradd -m -s /bin/bash -G video,audio,sudo botuser \
+    && echo "botuser ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/botuser \
     && mkdir -p /home/botuser/.steam /home/botuser/.local/share/Steam \
     && chown -R botuser:botuser /home/botuser
 
