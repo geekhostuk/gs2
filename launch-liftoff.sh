@@ -12,9 +12,9 @@ LAUNCH_OPTS="-windowed -w 800 -h 600"
 
 # Enable BepInEx doorstop if installed
 DOORSTOP_ENV=""
-if [ -f "$GAME_DIR/libdoorstop_x64.so" ]; then
+if [ -f "$GAME_DIR/libdoorstop.so" ]; then
     echo "BepInEx detected — enabling doorstop preloader."
-    DOORSTOP_ENV="DOORSTOP_ENABLE=TRUE DOORSTOP_LIB=$GAME_DIR/libdoorstop_x64.so DOORSTOP_LIBS=$GAME_DIR/doorstop_libs DOORSTOP_INVOKE_DLL_PATH=$GAME_DIR/BepInEx/core/BepInEx.Preloader.dll LD_LIBRARY_PATH=$GAME_DIR:\$LD_LIBRARY_PATH LD_PRELOAD=libdoorstop_x64.so:\$LD_PRELOAD"
+    DOORSTOP_ENV="DOORSTOP_ENABLE=TRUE DOORSTOP_LIB=$GAME_DIR/libdoorstop.so DOORSTOP_LIBS=$GAME_DIR/doorstop_libs DOORSTOP_INVOKE_DLL_PATH=$GAME_DIR/BepInEx/core/BepInEx.Preloader.dll LD_LIBRARY_PATH=$GAME_DIR:\$LD_LIBRARY_PATH LD_PRELOAD=libdoorstop.so:\$LD_PRELOAD"
 else
     echo "BepInEx not detected — launching vanilla."
 fi

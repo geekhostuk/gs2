@@ -32,7 +32,7 @@ chmod +x "$GAME_DIR/run_bepinex.sh" 2>/dev/null || true
 # Set ownership
 chown -R botuser:botuser "$GAME_DIR/BepInEx" "$GAME_DIR/run_bepinex.sh" 2>/dev/null || true
 chown botuser:botuser "$GAME_DIR/doorstop_config.ini" 2>/dev/null || true
-chown botuser:botuser "$GAME_DIR/libdoorstop_x64.so" 2>/dev/null || true
+chown botuser:botuser "$GAME_DIR/libdoorstop.so" 2>/dev/null || true
 
 echo ""
 echo "BepInEx installed successfully!"
