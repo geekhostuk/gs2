@@ -1,46 +1,66 @@
-# Liftoff Bot Servers — Docker Setup
+# Liftoff Bot Servers
 
-Two headless Docker containers running Liftoff (Steam App ID 732990) with GPU-accelerated rendering via NVIDIA passthrough and VirtualGL.
+Two headless Docker containers running Liftoff (Steam App ID 732990) as bot servers with NVIDIA GPU passthrough, VirtualGL rendering, and BepInEx mod support.
 
 ## Prerequisites
 
 - Ubuntu Server 22.04 LTS
-- NVIDIA RTX 4070 GPU (or compatible)
+- NVIDIA GPU (tested with RTX 4070)
 - Two Steam accounts, each owning Liftoff
-- A VNC client (e.g., TigerVNC, RealVNC) on your local machine
+- [RealVNC Viewer](https://www.realvnc.com/en/connect/download/viewer/) installed on your local machine (free)
 
-## 1. Host Setup
+## Project Files
 
-Copy this project to the server, then run the host setup script:
+| File | Purpose |
+|---|---|
+| `host-setup.sh` | Installs NVIDIA drivers, Docker, and nvidia-container-toolkit on the host |
+| `Dockerfile` | Builds the container image (Ubuntu 22.04 + Steam + VirtualGL + VNC) |
+| `docker-compose.yml` | Defines bot1 and bot2 containers with GPU, ports, and volumes |
+| `start.sh` | Container entrypoint: starts Xvfb, VNC, and Steam |
+| `launch-liftoff.sh` | Launches Liftoff inside a running container |
+| `setup-bepinex.sh` | Installs BepInEx 5.4.23.5 mod framework into Liftoff |
+
+## Step 1: Clone the Repo on the Server
+
+```bash
+sudo apt-get update && sudo apt-get install -y git
+git clone https://github.com/geekhostuk/gs2.git
+cd gs2
+```
+
+## Step 2: Run Host Setup
+
+This installs NVIDIA drivers, Docker Engine, and nvidia-container-toolkit:
 
 ```bash
 chmod +x host-setup.sh
 sudo ./host-setup.sh
 ```
 
-This installs NVIDIA drivers, Docker Engine, and nvidia-container-toolkit.
-
-**Reboot** if NVIDIA drivers were freshly installed:
+Reboot after (required for NVIDIA drivers to load):
 
 ```bash
 sudo reboot
 ```
 
-After reboot, verify the GPU is visible:
+After reboot, verify the GPU is detected:
 
 ```bash
 nvidia-smi
 ```
 
-## 2. Build the Docker Image
+You should see your GPU listed (e.g. `NVIDIA GeForce RTX 4070`). If not, the driver did not install correctly.
+
+## Step 3: Build the Docker Image
 
 ```bash
+cd ~/gs2
 docker compose build
 ```
 
-This takes a few minutes on first build (downloads Ubuntu packages, VirtualGL, Steam).
+First build takes several minutes. Subsequent builds use Docker's layer cache and are faster.
 
-## 3. Start the Containers
+## Step 4: Start the Containers
 
 ```bash
 docker compose up -d
@@ -52,86 +72,156 @@ Verify both containers are running:
 docker compose ps
 ```
 
-## 4. First-Run: Steam Login via VNC
+Expected output:
 
-Each container exposes a VNC server for initial setup:
+```
+NAME      IMAGE                COMMAND                  SERVICE   STATUS         PORTS
+bot1      liftoff-bot:latest   "/usr/local/bin/star…"   bot1      Up             0.0.0.0:31264->5900/tcp
+bot2      liftoff-bot:latest   "/usr/local/bin/star…"   bot2      Up             0.0.0.0:31265->5900/tcp
+```
 
-| Container | VNC Address          |
-|-----------|----------------------|
-| bot1      | `<server-ip>:31264`  |
-| bot2      | `<server-ip>:31265`  |
+## Step 5: Log in to Steam via VNC
 
-Connect with your VNC client. In each session:
+Open RealVNC Viewer and connect to each container:
 
-1. Steam will launch automatically and show the login screen
-2. Log in with the bot's Steam account credentials
-3. Complete Steam Guard verification (email/mobile code)
-4. Go to **Library > Liftoff** and install it
-5. Wait for the download to complete
-6. Optionally configure game settings
+| Container | VNC Address |
+|---|---|
+| bot1 | `<your-server-ip>:31264` |
+| bot2 | `<your-server-ip>:31265` |
 
-Steam login tokens persist in Docker volumes, so you only need to do this once.
+**Important:** Use a VNC client (RealVNC Viewer, TigerVNC), not a web browser. VNC is not HTTP.
 
-## 5. Launch Liftoff
+In each VNC session:
 
-After Steam is set up and Liftoff is installed, launch the game:
+1. Steam will be open with a login screen
+2. Enter the bot account's username and password
+3. Complete Steam Guard verification (enter the code from email or mobile app)
+4. Once logged in, go to **Library**
+5. Find **Liftoff** and click **Install**
+6. Wait for the download to complete (~5-10 GB)
+
+You only need to do this once per container. Steam login and game files persist in Docker volumes across restarts and rebuilds.
+
+## Step 6: Install BepInEx (Optional)
+
+After Liftoff is installed in both containers, install BepInEx:
+
+```bash
+docker exec -it bot1 /usr/local/bin/setup-bepinex.sh
+docker exec -it bot2 /usr/local/bin/setup-bepinex.sh
+```
+
+This downloads BepInEx 5.4.23.5 and extracts it into the Liftoff game directory.
+
+**Adding plugins:** Copy `.dll` plugin files into the container:
+
+```bash
+docker cp MyPlugin.dll bot1:/home/botuser/.local/share/Steam/steamapps/common/Liftoff/BepInEx/plugins/
+docker cp MyPlugin.dll bot2:/home/botuser/.local/share/Steam/steamapps/common/Liftoff/BepInEx/plugins/
+```
+
+Plugin config files are generated in `BepInEx/config/` on first launch.
+
+## Step 7: Launch Liftoff
 
 ```bash
 docker exec -it bot1 /usr/local/bin/launch-liftoff.sh
 docker exec -it bot2 /usr/local/bin/launch-liftoff.sh
 ```
 
-Monitor via VNC to confirm the game starts correctly.
+The script auto-detects BepInEx and enables it if installed. The game launches windowed at 800x600 inside the 1280x720 virtual desktop.
 
-## 6. Day-to-Day Operations
+Connect via VNC to verify the game is running correctly.
 
-**Restart containers** (Steam stays logged in via persistent volumes):
+## Day-to-Day Operations
+
+### Restart containers
+
+Steam stays logged in and the game stays installed (persistent volumes):
 
 ```bash
 docker compose restart
 ```
 
-**View logs:**
+### View container logs
 
 ```bash
 docker compose logs -f bot1
 docker compose logs -f bot2
 ```
 
-**Stop everything:**
+### Stop containers
 
 ```bash
 docker compose down
 ```
 
-**Rebuild after Dockerfile changes:**
+### Pull updates and rebuild
 
 ```bash
-docker compose build
+cd ~/gs2
+git pull
+docker compose down
+docker compose build --no-cache
 docker compose up -d
 ```
 
-## Persistence
+**Note:** After a rebuild, the updated scripts are baked into the new image. If you only changed `docker-compose.yml` (no Dockerfile changes), you can skip the build:
 
-Named Docker volumes store all Steam data:
+```bash
+git pull
+docker compose down
+docker compose up -d
+```
 
-| Volume            | Contents                              |
-|-------------------|---------------------------------------|
-| `bot1-steam`      | Bot 1 Steam client metadata, login    |
-| `bot1-steamlocal` | Bot 1 game files, downloads, cache    |
-| `bot2-steam`      | Bot 2 Steam client metadata, login    |
-| `bot2-steamlocal` | Bot 2 game files, downloads, cache    |
+### Check GPU access inside a container
 
-Data survives container restarts and rebuilds.
+```bash
+docker exec bot1 nvidia-smi
+```
 
-**Backup a volume:**
+### Check VirtualGL is working
+
+```bash
+docker exec bot1 vglrun glxinfo | grep "OpenGL renderer"
+```
+
+Should show the NVIDIA GPU name, not `llvmpipe` (software renderer).
+
+### Open a shell inside a container
+
+```bash
+docker exec -it bot1 bash
+```
+
+## Port Mapping
+
+| Container | Internal Port | Host Port | Protocol |
+|---|---|---|---|
+| bot1 | 5900 (VNC) | 31264 | TCP |
+| bot2 | 5900 (VNC) | 31265 | TCP |
+
+## Volume Mapping
+
+All Steam data persists in named Docker volumes:
+
+| Volume | Mount Point | Contents |
+|---|---|---|
+| `bot1-steam` | `/home/botuser/.steam` | Steam client metadata, login tokens |
+| `bot1-steamlocal` | `/home/botuser/.local/share/Steam` | Game files, downloads, shader cache |
+| `bot2-steam` | `/home/botuser/.steam` | Steam client metadata, login tokens |
+| `bot2-steamlocal` | `/home/botuser/.local/share/Steam` | Game files, downloads, shader cache |
+
+### Backup a volume
 
 ```bash
 docker run --rm -v bot1-steamlocal:/data -v "$(pwd)":/backup ubuntu \
     tar czf /backup/bot1-steamlocal-backup.tar.gz -C /data .
 ```
 
-**Delete all data** (requires re-login and re-install):
+### Delete all volumes (full reset)
+
+This deletes all Steam logins, game installs, and saves. You will need to redo Steps 5-7.
 
 ```bash
 docker compose down -v
@@ -139,52 +229,91 @@ docker compose down -v
 
 ## Troubleshooting
 
-**Black VNC screen:**
+### Black screen in VNC
+
+Check that Xvfb and x11vnc are running:
 
 ```bash
-docker exec bot1 ps aux | grep Xvfb
-# If Xvfb is not running, restart the container
+docker exec bot1 ps aux
+```
+
+Look for `Xvfb` and `x11vnc` in the process list. If missing, check the logs:
+
+```bash
+docker compose logs bot1
+```
+
+Restart the container:
+
+```bash
 docker compose restart bot1
 ```
 
-**Steam won't start / GPU errors:**
+### Steam shows "user namespaces" error
+
+The `docker-compose.yml` includes `security_opt` and `cap_add` settings to enable this. If you see this error, make sure you're using the latest `docker-compose.yml`:
 
 ```bash
-docker exec bot1 nvidia-smi
-# Should show the RTX 4070. If not, check nvidia-container-toolkit setup.
+git pull
+docker compose down
+docker compose up -d
 ```
 
-**Verify VirtualGL rendering:**
+### Steam asks for password / polkit authentication
+
+This means Steam is trying to install dependencies. It should resolve automatically with the polkit rules in the image. If it persists, run inside the container:
 
 ```bash
-docker exec bot1 su -p -s /bin/bash botuser -c "vglrun glxinfo | grep renderer"
-# Should show NVIDIA GPU, not llvmpipe
+docker exec -it bot1 bash
+sudo apt-get update && sudo apt-get install -f -y
 ```
 
-**Steam Guard re-authentication:**
-If Steam asks to log in again after a long period of inactivity, connect via VNC and log in interactively.
+### Steam Guard re-authentication
 
-**Container won't start (runtime error):**
-Ensure `nvidia` runtime is configured:
+Steam may invalidate login tokens after extended inactivity (~30 days). Connect via VNC and log in again.
+
+### Container keeps restarting
+
+Check logs for the crash reason:
+
+```bash
+docker compose logs --tail=50 bot1
+```
+
+### NVIDIA runtime not found
 
 ```bash
 docker info | grep -i runtime
-# Should list "nvidia" among the runtimes
+```
+
+If `nvidia` is not listed, re-run the toolkit setup:
+
+```bash
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
 ```
 
 ## Architecture
 
 ```
-Host (Ubuntu Server + RTX 4070)
+Host (Ubuntu Server + NVIDIA GPU)
 ├── Docker + nvidia-container-toolkit
+│
 ├── bot1 container
-│   ├── Xvfb :1 (800x600)
-│   ├── x11vnc → host:31264
-│   ├── VirtualGL (EGL backend)
-│   └── Steam → Liftoff
+│   ├── Xvfb :1 (1280x720 virtual display)
+│   ├── x11vnc (VNC server → host port 31264)
+│   ├── VirtualGL (EGL backend, GPU-accelerated rendering)
+│   ├── Steam client (runs as botuser)
+│   ├── Liftoff (launched via launch-liftoff.sh)
+│   ├── BepInEx (optional, installed via setup-bepinex.sh)
+│   └── Volumes: bot1-steam, bot1-steamlocal
+│
 └── bot2 container
-    ├── Xvfb :1 (800x600)
-    ├── x11vnc → host:31265
-    ├── VirtualGL (EGL backend)
-    └── Steam → Liftoff
+    ├── Xvfb :1 (1280x720 virtual display)
+    ├── x11vnc (VNC server → host port 31265)
+    ├── VirtualGL (EGL backend, GPU-accelerated rendering)
+    ├── Steam client (runs as botuser)
+    ├── Liftoff (launched via launch-liftoff.sh)
+    ├── BepInEx (optional, installed via setup-bepinex.sh)
+    └── Volumes: bot2-steam, bot2-steamlocal
 ```
