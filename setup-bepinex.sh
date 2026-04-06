@@ -5,7 +5,7 @@
 
 set -e
 
-BEPINEX_VERSION="5.4.23.2"
+BEPINEX_VERSION="5.4.23.5"
 GAME_DIR="/home/botuser/.local/share/Steam/steamapps/common/Liftoff"
 
 # Check game is installed
@@ -20,7 +20,7 @@ echo "Installing BepInEx $BEPINEX_VERSION into $GAME_DIR..."
 # Download BepInEx unix release
 cd /tmp
 wget -O bepinex.zip \
-    "https://github.com/BepInEx/BepInEx/releases/download/v${BEPINEX_VERSION}/BepInEx_unix_${BEPINEX_VERSION}.0.zip"
+    "https://github.com/BepInEx/BepInEx/releases/download/v${BEPINEX_VERSION}/BepInEx_linux_x64_${BEPINEX_VERSION}.zip"
 
 # Extract into game directory
 unzip -o bepinex.zip -d "$GAME_DIR"
