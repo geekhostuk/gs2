@@ -52,17 +52,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     policykit-1 \
     unzip \
-    # Steam meta-packages
+    # Steam required packages
     libc6:amd64 \
     libc6:i386 \
+    libgl1:amd64 \
+    libgl1-mesa-dri:amd64 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Steam
+# Install Steam and all its runtime dependencies
 RUN apt-get update \
     && wget -O /tmp/steam.deb \
        http://media.steampowered.com/client/installer/steam.deb \
     && (dpkg -i /tmp/steam.deb || true) \
     && apt-get install -f -y \
+    && apt-get install -y steam-libs-amd64 steam-libs-i386 || true \
     && rm -f /tmp/steam.deb \
     && rm -rf /var/lib/apt/lists/*
 
