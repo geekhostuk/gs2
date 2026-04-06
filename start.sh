@@ -18,8 +18,8 @@ sleep 1
 
 # Launch Steam directly — no vglrun needed for the Steam client UI
 # vglrun is only needed when launching the game via launch-liftoff.sh
-echo "Starting Steam as botuser (with VirtualGL environment)..."
-su -s /bin/bash botuser -c "export DISPLAY=:1 HOME=/home/botuser LD_PRELOAD='libvglfaker.so libdlfaker.so' VGL_DISPLAY=egl; steam" &
+echo "Starting Steam as botuser..."
+su -s /bin/bash botuser -c "export DISPLAY=:1 HOME=/home/botuser; steam" &
 
 echo "All services started. Connect via VNC to configure Steam."
 wait
