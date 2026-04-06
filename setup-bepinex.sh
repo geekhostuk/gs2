@@ -17,7 +17,7 @@ fi
 
 echo "Installing BepInEx $BEPINEX_VERSION into $GAME_DIR..."
 
-# Download BepInEx unix release
+# Download BepInEx linux release
 cd /tmp
 wget -O bepinex.zip \
     "https://github.com/BepInEx/BepInEx/releases/download/v${BEPINEX_VERSION}/BepInEx_linux_x64_${BEPINEX_VERSION}.zip"
@@ -29,10 +29,32 @@ rm -f bepinex.zip
 # Make the run script executable
 chmod +x "$GAME_DIR/run_bepinex.sh" 2>/dev/null || true
 
-# Set ownership
-chown -R botuser:botuser "$GAME_DIR/BepInEx" "$GAME_DIR/run_bepinex.sh" 2>/dev/null || true
+# Set ownership for all BepInEx files
+chown -R botuser:botuser "$GAME_DIR/BepInEx"
+chown botuser:botuser "$GAME_DIR/run_bepinex.sh" 2>/dev/null || true
 chown botuser:botuser "$GAME_DIR/doorstop_config.ini" 2>/dev/null || true
 chown botuser:botuser "$GAME_DIR/libdoorstop.so" 2>/dev/null || true
+chown botuser:botuser "$GAME_DIR/.doorstop_version" 2>/dev/null || true
+chown botuser:botuser "$GAME_DIR/changelog.txt" 2>/dev/null || true
+
+# Verify critical files exist
+echo ""
+echo "Verifying installation..."
+MISSING=0
+for f in "$GAME_DIR/libdoorstop.so" "$GAME_DIR/run_bepinex.sh" "$GAME_DIR/BepInEx/core/BepInEx.Preloader.dll"; do
+    if [ -f "$f" ]; then
+        echo "  OK: $f"
+    else
+        echo "  MISSING: $f"
+        MISSING=1
+    fi
+done
+
+if [ "$MISSING" -eq 1 ]; then
+    echo ""
+    echo "ERROR: Some BepInEx files are missing. Installation may have failed."
+    exit 1
+fi
 
 echo ""
 echo "========================================"
@@ -45,9 +67,9 @@ echo "  1. Connect to the container via VNC"
 echo "  2. In Steam, right-click Liftoff > Properties > General"
 echo "  3. In 'Launch Options', paste this exactly:"
 echo ""
-echo "     LD_PRELOAD=\"$GAME_DIR/libdoorstop.so\" DOORSTOP_ENABLE=TRUE DOORSTOP_INVOKE_DLL_PATH=\"$GAME_DIR/BepInEx/core/BepInEx.Preloader.dll\" %command%"
+echo "     ./run_bepinex.sh %command%"
 echo ""
-echo "  4. Click OK and launch the game"
+echo "  4. Launch the game from Steam"
 echo ""
 echo "Plugin directory:"
 echo "  $GAME_DIR/BepInEx/plugins/   — drop plugin .dll files here"
