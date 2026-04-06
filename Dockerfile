@@ -53,7 +53,9 @@ RUN apt-get update \
     && rm -f /tmp/virtualgl.deb \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /opt/VirtualGL/bin/vglrun /usr/local/bin/vglrun \
-    && vglrun --version
+    && echo "/opt/VirtualGL/lib64" > /etc/ld.so.conf.d/virtualgl.conf \
+    && echo "/opt/VirtualGL/lib32" >> /etc/ld.so.conf.d/virtualgl.conf \
+    && ldconfig
 
 # Install Steam
 RUN apt-get update \

@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+echo "Starting dbus..."
+mkdir -p /run/dbus
+dbus-daemon --system --fork 2>/dev/null || true
+
 echo "Starting Xvfb on display :1..."
 Xvfb :1 -screen 0 800x600x24 +extension GLX &
 sleep 2
