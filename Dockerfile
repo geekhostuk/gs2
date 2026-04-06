@@ -44,20 +44,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
-# Install VirtualGL
-RUN wget -O /tmp/virtualgl.deb \
-    https://github.com/VirtualGL/virtualgl/releases/download/3.1.4/virtualgl_3.1.4_amd64.deb \
-    && (dpkg -i /tmp/virtualgl.deb || apt-get install -f -y) \
-    && rm /tmp/virtualgl.deb \
-    && ls -la /opt/VirtualGL/bin/vglrun \
+# Install VirtualGL (apt-get update needed so -f can resolve deps)
+RUN apt-get update \
+    && wget -O /tmp/virtualgl.deb \
+       https://github.com/VirtualGL/virtualgl/releases/download/3.1.4/virtualgl_3.1.4_amd64.deb \
+    && (dpkg -i /tmp/virtualgl.deb || true) \
+    && apt-get install -f -y \
+    && rm -f /tmp/virtualgl.deb \
+    && rm -rf /var/lib/apt/lists/* \
     && ln -s /opt/VirtualGL/bin/vglrun /usr/local/bin/vglrun \
     && vglrun --version
 
 # Install Steam
-RUN wget -O /tmp/steam.deb \
-    http://media.steampowered.com/client/installer/steam.deb \
-    && (dpkg -i /tmp/steam.deb || apt-get install -f -y) \
-    && rm /tmp/steam.deb
+RUN apt-get update \
+    && wget -O /tmp/steam.deb \
+       http://media.steampowered.com/client/installer/steam.deb \
+    && (dpkg -i /tmp/steam.deb || true) \
+    && apt-get install -f -y \
+    && rm -f /tmp/steam.deb \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user with GPU and audio access
 RUN useradd -m -s /bin/bash -G video,audio botuser \
