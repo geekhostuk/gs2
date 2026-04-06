@@ -2,7 +2,6 @@ FROM nvidia/opengl:1.2-glvnd-runtime-ubuntu22.04
 
 ENV NVIDIA_VISIBLE_DEVICES=all \
     NVIDIA_DRIVER_CAPABILITIES=all \
-    VGL_DISPLAY=egl \
     DISPLAY=:1 \
     DEBIAN_FRONTEND=noninteractive \
     STEAM_RUNTIME=1
@@ -12,9 +11,10 @@ RUN dpkg --add-architecture i386
 
 # Install system packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Display and VNC
-    xvfb \
+    # Headless Xorg + VNC
+    xserver-xorg-core \
     x11vnc \
+    xinit \
     # Utilities
     wget \
     curl \
@@ -34,11 +34,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     vulkan-tools \
     libxv1 \
     libglu1-mesa \
+    libegl1 \
+    libgbm1 \
     # 32-bit GL/Vulkan (Steam/games need these)
     libgl1:i386 \
     libgl1-mesa-dri:i386 \
     libvulkan1:i386 \
     mesa-vulkan-drivers:i386 \
+    libegl1:i386 \
+    libgbm1:i386 \
     # Audio (Steam expects these)
     libpulse0 \
     libasound2 \
@@ -48,18 +52,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     policykit-1 \
     unzip \
+    # Steam meta-packages
+    libc6:amd64 \
+    libc6:i386 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install VirtualGL — force-extract to avoid apt removing it over deps
-# Libs install to /usr/lib/, binaries to /usr/bin/ and /opt/VirtualGL/bin/
-RUN wget -O /tmp/virtualgl.deb \
-       https://github.com/VirtualGL/virtualgl/releases/download/3.1.4/virtualgl_3.1.4_amd64.deb \
-    && dpkg -x /tmp/virtualgl.deb / \
-    && rm -f /tmp/virtualgl.deb \
-    && ldconfig \
-    && ls -la /usr/lib/libvglfaker.so /usr/lib/libdlfaker.so /usr/bin/vglrun
-
-# Install Steam and pre-run steamdeps so it doesn't prompt at runtime
+# Install Steam
 RUN apt-get update \
     && wget -O /tmp/steam.deb \
        http://media.steampowered.com/client/installer/steam.deb \
@@ -76,8 +74,42 @@ RUN useradd -m -s /bin/bash -G video,audio,sudo botuser \
 
 # Allow passwordless polkit for botuser
 RUN mkdir -p /etc/polkit-1/localauthority/50-local.d \
-    && echo '[Allow botuser all]\nIdentity=unix-user:botuser\nAction=*\nResultAny=yes\nResultInactive=yes\nResultActive=yes' \
+    && printf '[Allow botuser all]\nIdentity=unix-user:botuser\nAction=*\nResultAny=yes\nResultInactive=yes\nResultActive=yes\n' \
        > /etc/polkit-1/localauthority/50-local.d/botuser-allow.pkla
+
+# Headless Xorg config — uses NVIDIA GPU without a physical display
+RUN mkdir -p /etc/X11 \
+    && printf 'Section "Device"\n\
+    Identifier "Device0"\n\
+    Driver     "nvidia"\n\
+    Option     "AllowEmptyInitialConfiguration" "true"\n\
+EndSection\n\
+\n\
+Section "Screen"\n\
+    Identifier "Screen0"\n\
+    Device     "Device0"\n\
+    DefaultDepth 24\n\
+    SubSection "Display"\n\
+        Depth 24\n\
+        Modes "1280x720"\n\
+    EndSubSection\n\
+EndSection\n\
+\n\
+Section "ServerLayout"\n\
+    Identifier "Layout0"\n\
+    Screen     "Screen0"\n\
+    Option     "AllowNVIDIAGPUScreens"\n\
+EndSection\n\
+\n\
+Section "ServerFlags"\n\
+    Option "AutoAddGPU" "true"\n\
+    Option "AllowMouseOpenFail" "true"\n\
+    Option "AllowEmptyInput" "true"\n\
+    Option "BlankTime" "0"\n\
+    Option "StandbyTime" "0"\n\
+    Option "SuspendTime" "0"\n\
+    Option "OffTime" "0"\n\
+EndSection\n' > /etc/X11/xorg.conf
 
 # Copy scripts
 COPY start.sh /usr/local/bin/start.sh
