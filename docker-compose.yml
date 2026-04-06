@@ -4,6 +4,11 @@ services:
     image: liftoff-bot:latest
     container_name: bot1
     runtime: nvidia
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
+    cap_add:
+      - SYS_ADMIN
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
@@ -29,6 +34,11 @@ services:
     image: liftoff-bot:latest
     container_name: bot2
     runtime: nvidia
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
+    cap_add:
+      - SYS_ADMIN
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
