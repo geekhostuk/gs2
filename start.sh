@@ -5,6 +5,9 @@ echo "Starting dbus..."
 mkdir -p /run/dbus
 dbus-daemon --system --fork 2>/dev/null || true
 
+echo "Cleaning up stale X locks..."
+rm -f /tmp/.X1-lock /tmp/.X11-unix/X1
+
 echo "Starting Xvfb on display :1..."
 Xvfb :1 -screen 0 1280x720x24 +extension GLX &
 sleep 2
